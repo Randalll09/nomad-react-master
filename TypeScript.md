@@ -1,4 +1,4 @@
-# TYPESCRIPT
+# TypeScript
 
 ## 3.1 DefinitelyTyped
 

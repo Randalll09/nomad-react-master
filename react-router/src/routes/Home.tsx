@@ -1,7 +1,15 @@
 import { users } from '../components/db';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 function Home() {
+  const [readSearchParams, setSearchParams] = useSearchParams();
+
+  setTimeout(() => {
+    setSearchParams({
+      day: 'today',
+      tomorrow: '123',
+    });
+  }, 3000);
   return (
     <div>
       <h1>Users</h1>

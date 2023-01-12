@@ -469,3 +469,223 @@ export default User;
 ## 4.6 Outlet
 
 다시 한 번 짚고 넘어가자면 Outlet은 자식 라우트의 요소들을 렌더링한다. User.tsx 파일에 Outlet을 추가해주자.
+
+```JavaScript
+import { useParams, Outlet } from 'react-router-dom';
+import { users } from '../../components/db';
+
+const User = () => {
+  const { userId } = useParams();
+  return (
+    <div>
+      <h1>
+        User with {userId} is named {users[Number(userId) - 1].name}
+      </h1>
+      <hr />
+      <Outlet />
+    </div>
+  );
+};
+
+export default User;
+
+```
+
+하지만 현재 라우터에서 User 컴포넌트 밑의 자식 요소는 없으므로 Outlet은 렌더링 되지 않는다. Followers.tsx 라는 파일을 하나 만들자.
+
+```TypeScript
+
+const Followers = () => {
+  return <h1>Followers</h1>;
+};
+
+export default Followers;
+
+
+```
+
+그리고 라우터에 추가해주자.
+
+```JavaScript
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Root />,
+    children: [
+      { path: '', element: <Home />, errorElement: <ErrorComponent /> },
+      { path: 'About', element: <About /> },
+      {
+        path: '/users/:userId',
+        element: <User />,
+        children: [
+          {
+            path: 'followers',
+            element: <Followers />,
+          },
+        ],
+        errorElement: <NotFound />,
+      },
+    ],
+    errorElement: <NotFound />,
+  },
+]);
+
+export default router;
+
+
+```
+
+User에도 followers로 갈 링크를 추가하자.
+
+```JavaScript
+import { useParams, Outlet, Link } from 'react-router-dom';
+import { users } from '../../components/db';
+
+const User = () => {
+  const { userId } = useParams();
+  return (
+    <div>
+      <h1>
+        User with {userId} is named {users[Number(userId) - 1].name}
+      </h1>
+      <hr />
+      <Link to="followers">See Followers</Link>
+      <Outlet />
+    </div>
+  );
+};
+
+export default User;
+
+```
+
+## 4.7 useOutletContext
+
+이제 Followers는 User안에 렌더링 된다. 그런데 만약 User의 정보를 Followers에 넘기고 싶을 땐 어떡해야 할까.
+
+방법중 하나는 useParams를 사용하는 거고, 다른 방법은 useOutletContext를 사용하는 것이다. User.tsx로 가서 context prop을 추가해주자.
+
+```JavaScript
+import { useParams, Outlet, Link } from 'react-router-dom';
+import { users } from '../../components/db';
+
+const User = () => {
+  const { userId } = useParams();
+  return (
+    <div>
+      <h1>
+        User with {userId} is named {users[Number(userId) - 1].name}
+      </h1>
+      <hr />
+      <Link to="followers">See Followers</Link>
+      <Outlet context={{ nameOfUser: users[Number(userId) - 1].name }} />
+    </div>
+  );
+};
+
+export default User;
+
+```
+
+이렇게 하면 모든 Outlet으로 렌더링 되는 요소들에게 전부 context를 보낸다. 그럼 Followers 에서는 context를 어떻게 받을까.
+
+```JavaScript
+import { useOutletContext } from 'react-router-dom';
+
+const Followers = () => {
+  const ctx = useOutletContext();
+  return <h1>Followers</h1>;
+};
+
+export default Followers;
+
+```
+
+ctx는 {nameOfUser:name}을 받아온다. 이제 interface를 생성하고 렌더링 시키자.
+
+```JavaScript
+import { useOutletContext } from 'react-router-dom';
+
+interface FollowerContext {
+  nameOfUser: string;
+}
+
+const Followers = () => {
+  const ctx = useOutletContext<FollowerContext>();
+  return <h1>{ctx.nameOfUser}'s' Followers</h1>;
+};
+
+export default Followers;
+
+```
+
+## 4.8 Extras
+
+useSearchParams를 사용해보자. 이 hook은 search 파라미터를 수정 할 수 있게 해준다. Home에 useSearchParams를 추가해보자. useSearchParams는 두 요소가 있는 배열을 반환한다.
+
+```JavaScript
+import { users } from '../components/db';
+import { Link, useSearchParams } from 'react-router-dom';
+
+function Home() {
+  const [readSearchParams, setSearchParams] = useSearchParams();
+  return (
+    <div>
+      <h1>Users</h1>
+      <ul>
+        {users.map((val) => (
+          <li key={val.id}>
+            <Link to={`/users/${val.id}`}>{val.name}</Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default Home;
+
+```
+
+readSearchParams는 URLSearchParams라는 class를 반환한다. 이는 자바스크립트 자체에서 제공하는 API다.
+
+[https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams)
+
+위 링크에서 메소드에 대한 더 많은 정보를 볼 수 있다.
+
+readSearchParams.has("param")은 param이란 파라미터의 여부를 체크하고, readSearchParams.get("param")은 param이란 파라미터가 어떤 값을 갖는지 반환한다.
+
+setSearchParams 함수는 파라미터를 변경하기도 한다.
+
+```JavaScript
+import { users } from '../components/db';
+import { Link, useSearchParams } from 'react-router-dom';
+
+function Home() {
+  const [readSearchParams, setSearchParams] = useSearchParams();
+
+  setTimeout(() => {
+    setSearchParams({
+      day: 'today',
+      tomorrow: '123',
+    });
+  }, 3000);
+  return (
+    <div>
+      <h1>Users</h1>
+      <ul>
+        {users.map((val) => (
+          <li key={val.id}>
+            <Link to={`/users/${val.id}`}>{val.name}</Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default Home;
+
+```
+
+3초뒤 url이 "/"에서 "/?day=today&tomorrow=123" 로 변경되는 걸 볼 수 있다.
